@@ -217,7 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# macOS & Large Dataset (exceeds GitHub 100MB limit)
+# macOS & Large Datasets (exceed GitHub 100MB limit / keep repo lightweight)
 .DS_Store
 data/creditcard.csv
+data/credit_card_fraud_drift_2026.csv
+
 

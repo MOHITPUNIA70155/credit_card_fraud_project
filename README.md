@@ -211,27 +211,31 @@ Models were compared using **3-Fold Stratified Cross-Validation**.
 
 ## 📷 Results
 
-## Model Evaluation
+### 1. European PCA Dataset — Model Evaluation
 
 <img src="images/model_evaluation.png" width="900">
 
-The final evaluation includes:
+### 2. Banking Behavioral Drift Dataset (2026) — Temporal Evaluation
 
-- Confusion Matrix
-- ROC Curve
-- Precision-Recall Curve
-- Cross-Validation Comparison
+To test real-world generalization beyond anonymized PCA features, a second pipeline (`StandardScaler + Balanced Random Forest`) was trained strictly on **Phase 1 (Jan–Feb)** using **34 leakage-free real-time banking features** and evaluated on future unseen months:
+
+| Drift Phase | Rows | ROC-AUC | PR-AUC | Precision | Recall | F1-Score |
+|-------------|-----:|--------:|-------:|----------:|-------:|---------:|
+| Phase 2: Pre-Drift Validation (Mar) | 20,445 | **1.0000** | **0.9997** | 0.9664 | 0.9974 | 0.9817 |
+| Phase 3: Peak Drift (Apr–May) | 40,586 | **1.0000** | **0.9997** | 0.9646 | 0.9984 | 0.9812 |
+| Phase 4: Stabilization (Jun) | 19,836 | **1.0000** | **0.9998** | 0.9608 | 0.9984 | 0.9793 |
+
+Top real-world fraud signals learned: `amount_last_1h`, `transactions_last_24h`, `prior_dispute_ratio_90d`, `merchant_velocity_24h`, `transactions_last_1h`, and `pin_retry_count_24h`.
+
+<img src="images/drift_evaluation.png" width="820">
 
 ---
 
 ## 💡 Key Findings
 
-- The dataset is extremely imbalanced, with fraudulent transactions representing only **0.17%** of all observations.
-- SMOTE effectively balanced the training data while preventing data leakage through pipelines.
-- Random Forest achieved the highest PR-AUC among the evaluated models.
-- ROC-AUC of **0.9694** indicates excellent discrimination between legitimate and fraudulent transactions.
-- PR-AUC of **0.8115** demonstrates strong fraud detection performance on unseen data.
-- PR-AUC proved to be a more informative metric than overall accuracy for this classification problem.
+- **Extreme Imbalance (ULB Dataset):** Fraudulent transactions represent only **0.17%** of all observations; SMOTE inside an `imblearn` pipeline prevented data leakage and achieved **0.8115 Test PR-AUC** and **0.9694 ROC-AUC**.
+- **Real-World Behavioral Signals & Temporal Split (2026 Dataset):** Excluding post-transaction/dispute columns prevents target leakage, and velocity/dispute features (`amount_last_1h`, `transactions_last_24h`, `prior_dispute_ratio_90d`) stay highly predictive across unseen drift phases.
+- **Business-Aligned Decisions:** Dynamic threshold tuning paired with a Cost-Benefit Optimizer lets risk teams maximize net financial savings rather than optimizing raw accuracy.
 
 ---
 
@@ -240,23 +244,27 @@ The final evaluation includes:
 ```text
 credit_card_fraud_project/
 ├── app/
-│   ├── app.py                            # Streamlit web app (SHAP + Cost-Benefit Optimizer)
+│   ├── app.py                            # Multi-model Streamlit app (SHAP + Cost-Benefit + Live Trainer)
 │   ├── requirements.txt                  # App dependencies
-│   └── sample.csv                        # Sample data for testing
+│   ├── sample.csv                        # Sample data for ULB PCA model
+│   └── sample_drift.csv                  # Sample data for 2026 Behavioral Drift model
 │
 ├── model/
-│   └── fraud_pipeline.joblib             # Trained pipeline (scaler + SMOTE + model)
+│   ├── fraud_pipeline.joblib             # Trained ULB PCA pipeline (Scaler + SMOTE + RF)
+│   └── drift_fraud_pipeline.joblib       # Trained 2026 Behavioral pipeline (Scaler + Balanced RF)
 │
 ├── notebook/
-│   └── credit_card_fraud_detection.ipynb # Complete ML workflow
+│   ├── credit_card_fraud_detection.ipynb # ULB European PCA workflow
+│   └── drift_fraud_detection.ipynb       # 2026 Behavioral Drift temporal workflow
 │
 ├── data/
-│   └── DATASET.md                        # Dataset information & download link
+│   └── DATASET.md                        # Dataset links, schemas & temporal split details
 │
 ├── images/
 │   ├── app_screenshot.png                # App demo screenshot
 │   ├── credit_card_fraud_detection_thumbnail.png  # README banner
-│   └── model_evaluation.png              # Evaluation dashboard
+│   ├── model_evaluation.png              # ULB evaluation dashboard
+│   └── drift_evaluation.png              # 2026 Concept Drift phase evaluation chart
 │
 ├── README.md                             # Project documentation
 ├── requirements.txt                      # Notebook & app dependencies
